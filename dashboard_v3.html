@@ -187,8 +187,8 @@
   <div class="filter-group"><label>Usuarios</label>
     <select id="fNew" onchange="render()">
       <option value="Todos">Todos</option>
-      <option value="1">New Users</option>
-      <option value="0">Old Users</option>
+      <option value="NEW">New Users</option>
+      <option value="OLD">Old Users</option>
     </select></div>
   <div class="filter-group"><label>Unidad</label>
     <select id="fUnit" onchange="onUnitChange()">
@@ -300,7 +300,7 @@ function flt(rows,f,noProd){
     (noProd || f.product==='Todos' || r.PRODUCT===f.product) &&
     (f.seg==='Todos'     || r.SEL_SEGMENT===f.seg) &&
     (f.ent==='Todos'     || (f.ent==='PF'&&r.KYC_ENTITY_TYPE==='person') || (f.ent==='PJ'&&r.KYC_ENTITY_TYPE==='company')) &&
-    (f.newu==='Todos'    || String(r.FLAG_FST_CRED)===f.newu)
+    (f.newu==='Todos'    || r.FLAG_FST_CRED===f.newu)
   );
 }
 

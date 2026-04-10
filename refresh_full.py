@@ -203,6 +203,7 @@ BASE_OFERTA AS (
     CRD_CREDIT_SUBTYPE                                               AS PRODUCT,
     DATE_TRUNC(CAST(CRD_PROP_CREATION_DATE_ID AS DATE), MONTH)       AS MES_PROP,
     CAST(CRD_PROP_CREATION_DATE_ID AS DATE)                          AS DATE_PROP,
+    STATUS_USERS_CREDITS                                             AS FLAG_NEW_OLD,
     CRD_PROP_TOTAL_AMOUNT                                            AS PROP_AMT_LC,
     CRD_PROP_TOTAL_AMOUNT_USD                                        AS PROP_AMT_USD
   FROM `meli-bi-data.WHOWNER.BT_MP_CREDITS_PROPOSAL_DETAIL`
@@ -281,19 +282,6 @@ BASE_ORIG AS (
   WHERE O.SIT_SITE_ID IN ('MLB', 'MLA', 'MLM', 'MLC')
     AND O.CRD_CREDIT_SUBTYPE IN ('CF', 'PPV', 'DINERO_EXPRESS', 'SELLER_LINE')
     AND O.CRD_CREDIT_CREATION_DATE_ID BETWEEN DATE '2026-01-21' AND CURRENT_DATE()
-),
-
--- ── PRIMERA ORIGINACIÓN por seller+producto (historia completa) ───────────────
--- Permite clasificar NEW vs OLD en el universo de oferta, no solo en originadores
-PRIMERA_ORIG AS (
-  SELECT
-    CUS_CUST_ID_BORROWER                                             AS CUST_ID,
-    CRD_CREDIT_SUBTYPE                                               AS PRODUCT,
-    MIN(CAST(CRD_CREDIT_CREATION_DATE_ID AS DATE))                   AS PRIMERA_ORIG_DATE
-  FROM `meli-bi-data.WHOWNER.BT_MP_CREDITS_CREDIT_DETAIL`
-  WHERE CRD_CREDIT_SUBTYPE IN ('CF', 'PPV', 'DINERO_EXPRESS', 'SELLER_LINE')
-    AND SIT_SITE_ID IN ('MLB', 'MLA', 'MLM', 'MLC')
-  GROUP BY 1, 2
 )
 
 SELECT
@@ -329,11 +317,7 @@ SELECT
   F.N_FUNNEL                                                         AS N_FUNNEL_RAW,
   F.PATH                                                             AS PATH_RAW,
 
-  CASE
-    WHEN N.PRIMERA_ORIG_DATE IS NULL        THEN 'NEW'
-    WHEN N.PRIMERA_ORIG_DATE >= O.DATE_PROP THEN 'NEW'
-    ELSE                                         'OLD'
-  END                                                                AS FLAG_FST_CRED,
+  O.FLAG_NEW_OLD                                                     AS FLAG_FST_CRED,
 
   COUNT(DISTINCT O.CUST_ID)    AS Q_OFERTADOS,
   ROUND(SUM(O.PROP_AMT_LC))    AS PROP_AMT_LC,
@@ -361,10 +345,6 @@ LEFT JOIN (
   AND O.SITE     = F.SITE
   AND O.MES_PROP = F.MES
   AND O.PRODUCT  = F.PRODUCT
-
-LEFT JOIN PRIMERA_ORIG N
-  ON  O.CUST_ID  = N.CUST_ID
-  AND O.PRODUCT  = N.PRODUCT
 
 LEFT JOIN `meli-bi-data.WHOWNER.LK_MP_MAUS_SEGMENTATION` S
   ON  O.CUST_ID  = S.CUS_CUST_ID
